@@ -1,5 +1,12 @@
 # ⁴⁰Ca⁺ 偏振梯度冷却：QuTiP 仿真与阶段性结论
 
+## 397 nm Joshi 四能级模型
+
+[397 nm Joshi 模型说明](simulation/JOSHI_397NM.md) · [QuTiP 脚本](simulation/joshi_397nm.py)
+
+这一脚本使用 S₁/₂↔P₁/₂ 四能级和完整的运动位置指数算符，默认参数为 690 kHz 轴向频率、初态 n̄=15、+30 MHz 蓝失谐；并提供 +210 MHz 对照模式。它与下文的 393 nm Li 有效模型是两个独立模型，尚未完成默认大截断的收敛计算。
+
+
 基于 **Li et al., “Robust polarization gradient cooling of trapped ions”, New Journal of Physics 24, 043028 (2022)** 的 393 nm 路线，建立单离子、单运动模式的有效主方程模型。
 
 > **研究状态：机制演示与参数探索。尚未定量复现 Li 2022，也没有预测实际装置的最终温度。**
