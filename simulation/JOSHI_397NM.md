@@ -28,6 +28,19 @@ python simulation/joshi_397nm.py --benchmark --output joshi_like.csv
 python simulation/joshi_397nm.py --detuning-mhz 40 --saturation 0.04 --delta-khz 100 --trap-khz 800 --fock-cutoff 160
 ```
 
+In Jupyter, import `main` and pass simulation options as a list rather than
+using the kernel's own command-line arguments. From the GitHub repository root:
+
+```python
+from simulation.joshi_397nm import main
+main(["--fock-cutoff", "32", "--initial-nbar", "2",
+      "--duration-us", "10", "--points", "21", "--output", "quick.csv"])
+```
+
+Running the script's code directly in a notebook also ignores Jupyter's
+`-f kernel.json` argument. Calling `main([])` explicitly uses all defaults;
+that full 128-state calculation can be slow.
+
 `--benchmark` selects +210 MHz, 1.088 MHz trap frequency, 60 kHz difference,
 and `xi=1.35`, close to the single-ion setting reported by Joshi et al. The
 initial nbar remains 15 unless changed. Their reported cooling rate of about
