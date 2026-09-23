@@ -119,9 +119,9 @@ def build_model(p: Parameters):
     # Joshi Appendix A Table 1: recoil quadrature for sigma (m=+/-1)
     # and pi (m=0). Squared weights each sum to one. Each electronic
     # transition has three separate, incoherent Lindblad jump operators.
-    # This quadrature reproduces axial <cos²(theta)>=1/5 for sigma emission
-    # and 1/10 for pi emission; including CG branching gives 1/6 overall
-    # per excited sublevel in this direction. Check geometry before use.
+    # The second recoil moments are 2/5 for sigma emission and 1/5 for
+    # pi emission; CG branching gives (2/3)(2/5)+(1/3)(1/5)=1/3 overall.
+    # This is the paper's axial recoil factor alpha. Check geometry before use.
     recoil_sigma = ((-1, .2), (0, .6), (+1, .2))
     recoil_pi = ((-1, .1), (0, .8), (+1, .1))
     transitions = (
