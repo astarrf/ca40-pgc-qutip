@@ -17,15 +17,20 @@ python simulation/joshi_397nm.py --output pgc_trace.csv
 
 The defaults are 690 kHz axial frequency, initial thermal nbar 15, +30 MHz
 blue detuning, 60 kHz beam frequency difference, saturation `s=0.063`,
-128 Fock states, and 100 µs of evolution. The script writes a CSV and prints
-its final nbar. A full 128-state density-matrix run can take substantial time
-and memory. Start with a smaller cutoff only to check operation, then increase
-it until the nbar trace stops changing.
+128 Fock states, and 100 µs of evolution. By default the script uses QuTiP's
+Monte Carlo wave-function solver (`--solver mc`) to avoid constructing the
+enormous density-matrix Liouvillian. It averages 2×N trajectories by default.
+This is a stochastic estimate of the same Lindblad dynamics, so repeat with
+more `--trajectories` and another `--seed` to check sampling error. The full
+run may still take a long time, but short runs at N=64 and N=128 have been
+completed without the terabyte allocation. The deterministic solver remains
+available with `--solver master` for small cutoffs.
 
 ```bash
 python simulation/joshi_397nm.py --fock-cutoff 32 --initial-nbar 2 --duration-us 10 --points 21 --output quick.csv
 python simulation/joshi_397nm.py --benchmark --output joshi_like.csv
 python simulation/joshi_397nm.py --detuning-mhz 40 --saturation 0.04 --delta-khz 100 --trap-khz 800 --fock-cutoff 160
+python simulation/joshi_397nm.py --fock-cutoff 64 --trajectories 256 --duration-us 20 --output pgc_mc64.csv
 ```
 
 In Jupyter, import `main` and pass simulation options as a list rather than
@@ -41,12 +46,11 @@ Running the script's code directly in a notebook also ignores Jupyter's
 `-f kernel.json` argument. Calling `main([])` explicitly uses all defaults;
 that full 128-state calculation can be slow.
 
-The script prints a model-building status and QuTiP's text progress during
-time evolution. Percentages refer to requested output time points, so the
-estimated time remaining may be uneven when some intervals are harder to
-integrate. Use `--no-progress` on the command line, or include it in the
-list passed to `main([...])`, to hide these messages. If Jupyter imported an
-older version of the module, restart the kernel before trying this update.
+The script prints a model-building status and QuTiP's text progress. For MC,
+the percentage refers to completed trajectories; for `--solver master`, it
+refers to requested output time points. Use `--no-progress` on the command
+line, or include it in the list passed to `main([...])`, to hide messages. If
+Jupyter imported an older version, restart the kernel before trying the update.
 
 `--benchmark` selects +210 MHz, 1.088 MHz trap frequency, 60 kHz difference,
 and `xi=1.35`, close to the single-ion setting reported by Joshi et al. The
@@ -58,10 +62,14 @@ splitting, and 866 nm repumping are not all reproduced here.
 ## What to inspect
 
 The CSV columns are `time_us`, `nbar`, `p_excited`, `p_top5`, and `p_n0`.
+MC output adds `nbar_trajectory_std`, the spread across trajectories, **not**
+the uncertainty on their mean. Check convergence by increasing trajectory
+count as well as the Fock cutoff.
 Plot nbar against time and look for cooling and a plateau. Check that the
 initial omitted thermal probability and `p_top5` are small; rerun at larger
 Fock cutoff and compare the entire trace. For nbar 15, low cutoffs can badly
-distort even the starting value. The printed `xi` is the simple semiclassical
+distort even the starting value: N=64 renormalizes the intended initial nbar
+15 to 13.954, while N=128 gives 14.967. The printed `xi` is the simple semiclassical
 parameter for comparison only. At +30 MHz and eta near 0.21, its predicted
 steady state should not be treated as the result of this quantum calculation.
 
