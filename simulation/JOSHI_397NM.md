@@ -66,6 +66,23 @@ MC output adds `nbar_trajectory_std`, the spread across trajectories, **not**
 the uncertainty on their mean. Check convergence by increasing trajectory
 count as well as the Fock cutoff.
 
+Plot nbar against time and look for cooling and a plateau. Check that the
+initial omitted thermal probability and `p_top5` are small; rerun at larger
+Fock cutoff and compare the entire trace. For nbar 15, low cutoffs can badly
+distort even the starting value: N=64 renormalizes the intended initial nbar
+15 to 13.954, while N=128 gives 14.967. The printed `xi` is the simple
+semiclassical parameter for comparison only. At +30 MHz and eta near 0.21,
+its predicted steady state is not the result of this quantum calculation.
+
+Frequencies supplied on the command line are in cycles per second with the
+shown MHz/kHz units; internally the solver uses radians per microsecond.
+Positive `--detuning-mhz` means blue detuning. `--delta-khz` is the full
+frequency difference between beams, so the gradient phase advances by
+`delta*t/2`. `--axial-projection` scales each beam wavevector's axial
+component; the default assumes alignment with the axial mode. We ignore
+decay to D3/2 and the 866 nm repumper, so compare with laboratory data only
+after extending or calibrating the model.
+
 ## Check MC sampling convergence
 
 `check_mc_convergence.py` holds the physical parameters and Fock cutoff fixed,
@@ -97,20 +114,3 @@ tolerance. It is a practical screen, not a proof; use more trajectories and
 seeds if results are close to the threshold. A 20 µs pilot cannot establish
 sampling convergence of a 100 µs run. This check also does **not** test Fock
 cutoff convergence: with nbar 15, N=64 starts at actual nbar 13.954.
-
-Plot nbar against time and look for cooling and a plateau. Check that the
-initial omitted thermal probability and `p_top5` are small; rerun at larger
-Fock cutoff and compare the entire trace. For nbar 15, low cutoffs can badly
-distort even the starting value: N=64 renormalizes the intended initial nbar
-15 to 13.954, while N=128 gives 14.967. The printed `xi` is the simple semiclassical
-parameter for comparison only. At +30 MHz and eta near 0.21, its predicted
-steady state should not be treated as the result of this quantum calculation.
-
-Frequencies supplied on the command line are in cycles per second with the
-shown MHz/kHz units; internally the solver uses radians per microsecond.
-Positive `--detuning-mhz` means blue detuning. `--delta-khz` is the full
-frequency difference between beams, so the gradient phase advances by
-`delta*t/2`. `--axial-projection` scales each beam wavevector's axial
-component; the default assumes alignment with the axial mode. We ignore
-decay to D3/2 and the 866 nm repumper, so compare with laboratory data only
-after extending or calibrating the model.
