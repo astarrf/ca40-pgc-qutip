@@ -2,7 +2,7 @@
 
 ## 397 nm Joshi 四能级模型
 
-[397 nm Joshi 模型说明](simulation/JOSHI_397NM.md) · [QuTiP 脚本](simulation/joshi_397nm.py)
+[397 nm Joshi 模型说明](simulation/JOSHI_397NM.md) · [QuTiP 脚本](simulation/joshi_397nm.py) · [MC 采样收敛检查](simulation/check_mc_convergence.py)
 
 这一脚本使用 S₁/₂↔P₁/₂ 四能级和完整的运动位置指数算符，默认参数为 690 kHz 轴向频率、初态 n̄=15、+30 MHz 蓝失谐；并提供 +210 MHz 对照模式。它与下文的 393 nm Li 有效模型是两个独立模型，尚未完成默认大截断的收敛计算。
 
