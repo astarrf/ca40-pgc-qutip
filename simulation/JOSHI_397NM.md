@@ -65,6 +65,39 @@ The CSV columns are `time_us`, `nbar`, `p_excited`, `p_top5`, and `p_n0`.
 MC output adds `nbar_trajectory_std`, the spread across trajectories, **not**
 the uncertainty on their mean. Check convergence by increasing trajectory
 count as well as the Fock cutoff.
+
+## Check MC sampling convergence
+
+`check_mc_convergence.py` holds the physical parameters and Fock cutoff fixed,
+uses increasing trajectory counts, and repeats each count with independent
+random seeds. For a pilot at N=64:
+
+```bash
+python simulation/check_mc_convergence.py --fock-cutoff 64 --counts 128,256,512 \
+  --repeats 3 --duration-us 20 --points 41 --tolerance 0.25 \
+  --prefix mc64_pilot
+```
+
+From the GitHub repository root, prefix the script path with `simulation/`.
+In Jupyter:
+
+```python
+from simulation.check_mc_convergence import main
+main(["--fock-cutoff", "64", "--counts", "128,256,512",
+      "--repeats", "3", "--duration-us", "20", "--points", "41",
+      "--tolerance", "0.25", "--prefix", "mc64_pilot"])
+```
+
+The checker saves `<prefix>_runs.csv` after every seed, then writes
+`<prefix>_summary.csv` and `<prefix>_diagnostics.json` when complete. Inspect
+the maximum difference between the two largest mean nbar traces and the
+seed-to-seed standard error across the full time range. The JSON's
+`provisional_sampling_pass` compares both with the chosen absolute phonon
+tolerance. It is a practical screen, not a proof; use more trajectories and
+seeds if results are close to the threshold. A 20 µs pilot cannot establish
+sampling convergence of a 100 µs run. This check also does **not** test Fock
+cutoff convergence: with nbar 15, N=64 starts at actual nbar 13.954.
+
 Plot nbar against time and look for cooling and a plateau. Check that the
 initial omitted thermal probability and `p_top5` are small; rerun at larger
 Fock cutoff and compare the entire trace. For nbar 15, low cutoffs can badly
