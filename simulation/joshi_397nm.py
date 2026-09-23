@@ -159,7 +159,20 @@ def build_model(p: Parameters):
     return H, rho0, c_ops, observables, details
 
 
-def simulate(p: Parameters, show_progress: bool = True):
+def simulate(p: Parameters, show_progress: bool = True, solver: str = "mc",
+             trajectories: int | None = None, seed: int = 1234):
+    if solver not in {"mc", "master"}:
+        raise ValueError("solver must be 'mc' or 'master'")
+    # A thermal state with nbar>0 has both ground sublevels populated at
+    # every retained Fock level. QuTiP's mixed-state MC sampler needs at
+    # least one trajectory per nonzero initial component.
+    min_trajectories = 2 * p.fock_cutoff if p.initial_nbar > 0 else 2
+    if solver == "mc":
+        if trajectories is None:
+            trajectories = min_trajectories
+        if trajectories < min_trajectories:
+            raise ValueError(f"--trajectories must be >= {min_trajectories} "
+                             "for this mixed initial state")
     if show_progress:
         print("Building Hamiltonian and recoil channels...", flush=True)
     H, rho0, c_ops, obs, details = build_model(p)
@@ -167,12 +180,23 @@ def simulate(p: Parameters, show_progress: bool = True):
     # Store expectations only, never the (potentially large) density matrices.
     options = {"store_states": False, "nsteps": 10000, "atol": 1e-8, "rtol": 1e-6,
                "progress_bar": "text" if show_progress else ""}
-    if show_progress:
-        print("Evolving density matrix (progress by requested time points):", flush=True)
-    result = qt.mesolve(H, rho0, times, c_ops=c_ops, e_ops=list(obs.values()),
-                       args={}, options=options)
+    if solver == "mc":
+        if show_progress:
+            print(f"Evolving {trajectories} wave-function trajectories...", flush=True)
+        result = qt.mcsolve(H, rho0, times, c_ops=c_ops,
+                            e_ops=list(obs.values()), ntraj=trajectories,
+                            seeds=seed, args={}, options=options)
+    else:
+        if show_progress:
+            print("Evolving density matrix (progress by requested time points):", flush=True)
+        result = qt.mesolve(H, rho0, times, c_ops=c_ops,
+                            e_ops=list(obs.values()), args={}, options=options)
     columns = {name: np.real(np.asarray(values))
                for name, values in zip(obs, result.expect)}
+    if solver == "mc":
+        columns["nbar_trajectory_std"] = np.real(np.asarray(result.std_expect[0]))
+        details["trajectories"] = result.num_trajectories
+    details["solver"] = solver
     return times, columns, details
 
 
@@ -192,6 +216,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--fock-cutoff", type=int)
     ap.add_argument("--duration-us", type=float)
     ap.add_argument("--points", type=int)
+    ap.add_argument("--solver", choices=("mc", "master"), default="mc",
+                    help="MC wave functions by default; exact master equation is memory-intensive")
+    ap.add_argument("--trajectories", type=int,
+                    help="MC trajectories (default: 2 times Fock cutoff)")
+    ap.add_argument("--seed", type=int, default=1234, help="MC random seed")
     ap.add_argument("--output", type=Path, default=Path("pgc_trace.csv"))
     ap.add_argument("--no-progress", action="store_true", help="hide solver progress messages")
     # A notebook kernel starts as `ipykernel_launcher.py -f kernel.json`.
@@ -207,7 +236,9 @@ def main(argv: list[str] | None = None) -> None:
     updates = {name: getattr(args, name) for name in Parameters.__dataclass_fields__
                if getattr(args, name) is not None}
     p = replace(p, **updates)
-    times, columns, details = simulate(p, show_progress=not args.no_progress)
+    times, columns, details = simulate(p, show_progress=not args.no_progress,
+                                       solver=args.solver, trajectories=args.trajectories,
+                                       seed=args.seed)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="") as f:
         writer = csv.writer(f)
@@ -220,6 +251,10 @@ def main(argv: list[str] | None = None) -> None:
           "omitted thermal probability={initial_tail_omitted:.3g}".format(**details))
     print(f"Final nbar={columns['nbar'][-1]:.4f}, excited={columns['p_excited'][-1]:.4g}, "
           f"top-five Fock population={columns['p_top5'][-1]:.3g}")
+    if args.solver == "mc":
+        print(f"MC trajectories={details['trajectories']}; final per-trajectory "
+              f"nbar spread={columns['nbar_trajectory_std'][-1]:.3g}. "
+              "Increase --trajectories to check sampling convergence.")
     if details["initial_tail_omitted"] > 1e-3 or columns["p_top5"].max() > 1e-3:
         print("CUTOFF WARNING: increase --fock-cutoff and compare traces.")
     if args.benchmark:
