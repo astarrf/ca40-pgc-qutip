@@ -159,11 +159,16 @@ def build_model(p: Parameters):
     return H, rho0, c_ops, observables, details
 
 
-def simulate(p: Parameters):
+def simulate(p: Parameters, show_progress: bool = True):
+    if show_progress:
+        print("Building Hamiltonian and recoil channels...", flush=True)
     H, rho0, c_ops, obs, details = build_model(p)
     times = np.linspace(0, p.duration_us, p.points)
     # Store expectations only, never the (potentially large) density matrices.
-    options = {"store_states": False, "nsteps": 10000, "atol": 1e-8, "rtol": 1e-6}
+    options = {"store_states": False, "nsteps": 10000, "atol": 1e-8, "rtol": 1e-6,
+               "progress_bar": "text" if show_progress else ""}
+    if show_progress:
+        print("Evolving density matrix (progress by requested time points):", flush=True)
     result = qt.mesolve(H, rho0, times, c_ops=c_ops, e_ops=list(obs.values()),
                        args={}, options=options)
     columns = {name: np.real(np.asarray(values))
@@ -188,6 +193,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--duration-us", type=float)
     ap.add_argument("--points", type=int)
     ap.add_argument("--output", type=Path, default=Path("pgc_trace.csv"))
+    ap.add_argument("--no-progress", action="store_true", help="hide solver progress messages")
     # A notebook kernel starts as `ipykernel_launcher.py -f kernel.json`.
     # Those are Jupyter's arguments, not simulation options. `%run script.py`
     # sets argv[0] to this script, so its explicit command-line flags still work.
@@ -201,7 +207,7 @@ def main(argv: list[str] | None = None) -> None:
     updates = {name: getattr(args, name) for name in Parameters.__dataclass_fields__
                if getattr(args, name) is not None}
     p = replace(p, **updates)
-    times, columns, details = simulate(p)
+    times, columns, details = simulate(p, show_progress=not args.no_progress)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="") as f:
         writer = csv.writer(f)
