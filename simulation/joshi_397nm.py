@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -170,7 +171,8 @@ def simulate(p: Parameters):
     return times, columns, details
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Run from a shell or notebook; pass a list to set notebook options."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--benchmark", action="store_true", help="Joshi-like +210 MHz, 1.088 MHz, xi=1.35, 60 kHz moving gradient")
     ap.add_argument("--trap-khz", type=float)
@@ -186,7 +188,12 @@ def main() -> None:
     ap.add_argument("--duration-us", type=float)
     ap.add_argument("--points", type=int)
     ap.add_argument("--output", type=Path, default=Path("pgc_trace.csv"))
-    args = ap.parse_args()
+    # A notebook kernel starts as `ipykernel_launcher.py -f kernel.json`.
+    # Those are Jupyter's arguments, not simulation options. `%run script.py`
+    # sets argv[0] to this script, so its explicit command-line flags still work.
+    if argv is None and Path(sys.argv[0]).stem == "ipykernel_launcher":
+        argv = []
+    args = ap.parse_args(argv)
     p = Parameters()
     if args.benchmark:
         p = replace(p, trap_khz=1088.0, detuning_mhz=210.0,
