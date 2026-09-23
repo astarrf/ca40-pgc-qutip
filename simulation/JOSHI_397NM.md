@@ -41,6 +41,13 @@ Running the script's code directly in a notebook also ignores Jupyter's
 `-f kernel.json` argument. Calling `main([])` explicitly uses all defaults;
 that full 128-state calculation can be slow.
 
+The script prints a model-building status and QuTiP's text progress during
+time evolution. Percentages refer to requested output time points, so the
+estimated time remaining may be uneven when some intervals are harder to
+integrate. Use `--no-progress` on the command line, or include it in the
+list passed to `main([...])`, to hide these messages. If Jupyter imported an
+older version of the module, restart the kernel before trying this update.
+
 `--benchmark` selects +210 MHz, 1.088 MHz trap frequency, 60 kHz difference,
 and `xi=1.35`, close to the single-ion setting reported by Joshi et al. The
 initial nbar remains 15 unless changed. Their reported cooling rate of about
